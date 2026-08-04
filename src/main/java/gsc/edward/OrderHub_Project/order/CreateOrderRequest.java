@@ -1,5 +1,6 @@
 package gsc.edward.OrderHub_Project.order;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
@@ -7,13 +8,14 @@ import java.util.List;
 
 public record CreateOrderRequest(
 
+        @Valid
         @NotEmpty(message = "items не должен быть пустым")
         List<OrderItemRequest> items
 ) {
 
     public record OrderItemRequest(
 
-            @NotEmpty(message = "productId обязателен")
+            @NotNull(message = "productId обязателен")
             Long productId,
 
             @NotBlank(message = "productName обязателен")
