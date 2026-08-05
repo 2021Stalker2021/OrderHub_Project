@@ -34,3 +34,4 @@ build/
 
 ### Исключения для Docker и локальных секретов ###
 .env
+**/application-local.yaml
