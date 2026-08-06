@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-tables
+      author: orderhub
+      changes:
+        - createTable:
+            tableName: orders
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                    checkConstraint: "status IN ('CREATED', 'PAID', 'CANCELLED')"
+              - column:
+                  name: create_at
+                  type: timestamp
+                  defaultValueComputed: current_timestamp
+                  constraints:
+                    nullable: false
