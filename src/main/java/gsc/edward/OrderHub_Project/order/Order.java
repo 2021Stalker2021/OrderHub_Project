@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "orders")
@@ -22,6 +23,10 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
+    @Column(name = "order_number", nullable = false, unique = true)
+    private String orderNumber;
+
+    @Column(name = "create_at")
     private Instant createdAt;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
@@ -32,5 +37,6 @@ public class Order {
         this.status = OrderStatus.CREATED;
         this.createdAt = Instant.now();
         this.items.addAll(items);
+        this.orderNumber = UUID.randomUUID().toString();
     }
 }
