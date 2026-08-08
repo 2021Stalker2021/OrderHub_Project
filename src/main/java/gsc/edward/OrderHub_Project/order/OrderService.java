@@ -1,7 +1,10 @@
 package gsc.edward.OrderHub_Project.order;
 
+import gsc.edward.OrderHub_Project.order.exception.NotFoundOrderException;
+import gsc.edward.OrderHub_Project.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -24,5 +27,12 @@ public class OrderService {
         Order order = new Order(items);
 
         return orderRepository.save(order);
+    }
+
+    @Transactional(readOnly = true)
+    public Order findOrderById(Long id) {
+        return orderRepository.findWithItemsById(id).orElseThrow(
+                () -> new NotFoundOrderException("Заказ не найден")
+        );
     }
 }

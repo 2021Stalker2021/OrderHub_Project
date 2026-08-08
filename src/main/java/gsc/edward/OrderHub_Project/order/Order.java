@@ -1,9 +1,9 @@
 package gsc.edward.OrderHub_Project.order;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -13,7 +13,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "orders")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Setter
+@NoArgsConstructor
 public class Order {
 
     @Id
@@ -29,8 +30,7 @@ public class Order {
     @Column(name = "create_at")
     private Instant createdAt;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "order_id")
+    @OneToMany(mappedBy = "order",cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
     public Order(List<OrderItem> items) {
@@ -38,5 +38,9 @@ public class Order {
         this.createdAt = Instant.now();
         this.items.addAll(items);
         this.orderNumber = UUID.randomUUID().toString();
+
+        if (items != null) {
+            items.forEach(item -> item.setOrder(this));
+        }
     }
 }

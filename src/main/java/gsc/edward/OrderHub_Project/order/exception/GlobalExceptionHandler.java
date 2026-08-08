@@ -1,5 +1,6 @@
-package gsc.edward.OrderHub_Project.order;
+package gsc.edward.OrderHub_Project.order.exception;
 
+import gsc.edward.OrderHub_Project.order.ErrorDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -20,5 +21,13 @@ public class GlobalExceptionHandler {
                 .toList();
 
         return ResponseEntity.badRequest().body(new ErrorDto(ex.getStatusCode().value(),"Validation Failed", errors));
+    }
+
+    @ExceptionHandler(NotFoundOrderException.class)
+    public ResponseEntity<ErrorDto> handleException(NotFoundOrderException ex) {
+
+        ErrorDto orderNotFound = new ErrorDto(404, "Order Not Found", ex.getMessage());
+
+        return ResponseEntity.badRequest().body(orderNotFound);
     }
 }

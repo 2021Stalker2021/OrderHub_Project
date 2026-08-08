@@ -5,6 +5,9 @@ spring:
   profiles:
     active: local
 
+  jooq:
+    sql-dialect: postgres
+
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:orderhub}
     username: ${POSTGRES_USER}
@@ -18,6 +21,11 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          batch_size: 50
+        order_updates: true
+        order_inserts: true
+        generate_statistics: true
 
   liquibase:
     user: ${POSTGRES_USER}
