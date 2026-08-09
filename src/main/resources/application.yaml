@@ -27,11 +27,11 @@ spring:
         order_inserts: true
         generate_statistics: true
 
-  liquibase:
-    user: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
-    enabled: true
-    change-log: classpath:/db/changelog/changelog_master.yaml
+#  liquibase:
+#    user: ${POSTGRES_USER}
+#    password: ${POSTGRES_PASSWORD}
+#    enabled: true
+#    change-log: classpath:/db/changelog/changelog_master.yaml
 
 server:
   port: 8081
@@ -39,3 +39,33 @@ server:
 logging:
   level:
     org.hibernate.sql: DEBUG
+
+# ACTUATOR
+management:
+  info:
+    env:
+      enabled: true
+    git:
+      enabled: true
+      mode: full
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+          - metrics
+          - prometheus
+          - loggers
+
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+
+info:
+  app:
+    name: "OrderHub"
+    version: "0.0.1"
+    description: "Учимся писать продакшен код"
