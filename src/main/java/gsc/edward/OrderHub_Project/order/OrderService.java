@@ -1,6 +1,7 @@
 package gsc.edward.OrderHub_Project.order;
 
 import gsc.edward.OrderHub_Project.order.exception.NotFoundOrderException;
+import gsc.edward.OrderHub_Project.order.metrics.annotation.BusinessMetric;
 import gsc.edward.OrderHub_Project.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,10 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
 
+    @BusinessMetric(
+            value = "orders.created",
+            tags = {"operation=create", "type=write"}
+    )
     public Order createOrder(CreateOrderRequest request) {
 
         log.debug("В метод createOrder получен запрос {}", request);
@@ -37,6 +42,10 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
+    @BusinessMetric(
+            value = "orders.retrieved",
+            tags = {"operation=get", "type=read"}
+    )
     public Order findOrderById(Long id) {
 
         log.debug("В метод findOrderById получен запрос поиска по id: {}", id);
