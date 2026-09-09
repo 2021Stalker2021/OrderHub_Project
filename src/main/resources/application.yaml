@@ -42,6 +42,13 @@ logging:
 
 # ACTUATOR
 management:
+  metrics:
+    distribution:
+      percentiles-histogram:
+        all: true
+      slo:
+        "[http.server.requests]": 50ms,100ms,200ms,500ms,1s,2s
+
   info:
     env:
       enabled: true

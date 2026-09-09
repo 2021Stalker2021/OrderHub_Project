@@ -12,6 +12,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -83,7 +84,7 @@ public class BusinessMetricAspect {
                                 .tags(timerTags)
                                 .description("Execution duration")
                                 .publishPercentileHistogram()
-                                //.sla()
+                                .sla(Duration.ofMillis(50), Duration.ofMillis(100), Duration.ofMillis(500), Duration.ofSeconds(1), Duration.ofSeconds(2))
                                 .register(meterRegistry);
                     }
             );
