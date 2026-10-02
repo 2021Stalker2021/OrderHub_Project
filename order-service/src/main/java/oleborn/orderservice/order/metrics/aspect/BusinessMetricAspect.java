@@ -1,6 +1,6 @@
 package oleborn.orderservice.order.metrics.aspect;
 
-import gsc.edward.OrderHub_Project.order.metrics.annotation.BusinessMetric;
+import oleborn.orderservice.order.metrics.annotation.BusinessMetric;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
@@ -28,7 +28,7 @@ public class BusinessMetricAspect {
 
     private final ConcurrentMap<String, Timer> timers = new ConcurrentHashMap<>();
 
-    @Around("@annotation(metric))")
+    @Around("@annotation(metric)")
     public Object measure(
             ProceedingJoinPoint joinPoint,
             BusinessMetric metric

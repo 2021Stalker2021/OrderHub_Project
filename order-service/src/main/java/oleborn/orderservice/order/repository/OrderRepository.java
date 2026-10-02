@@ -1,6 +1,6 @@
 package oleborn.orderservice.order.repository;
 
-import gsc.edward.OrderHub_Project.order.Order;
+import oleborn.orderservice.order.Order;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 

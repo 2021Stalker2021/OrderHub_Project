@@ -187,7 +187,7 @@
                                 <!-- Главный файл changelog Liquibase -->
                                 <property>
                                     <key>scripts</key>
-                                    <value>db/changelog/changelog_master.yaml</value>
+                                    <value>changelog/changelog_master.yaml</value>
                                 </property>
                                 <!--
                                 ИСКЛЮЧЕНИЕ ТАБЛИЦ LIQUIBASE:

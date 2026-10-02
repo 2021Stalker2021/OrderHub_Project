@@ -1,10 +1,10 @@
 package oleborn.orderservice.order.demo;
 
-import gsc.edward.OrderHub_Project.order.CreateOrderRequest;
-import gsc.edward.OrderHub_Project.order.Order;
-import gsc.edward.OrderHub_Project.order.OrderItem;
-import gsc.edward.OrderHub_Project.order.demo.repository.JdbcOrderRepository;
-import gsc.edward.OrderHub_Project.order.demo.repository.JooqOrderRepository;
+import oleborn.orderservice.order.CreateOrderRequest;
+import oleborn.orderservice.order.Order;
+import oleborn.orderservice.order.OrderItem;
+import oleborn.orderservice.order.demo.repository.JdbcOrderRepository;
+import oleborn.orderservice.order.demo.repository.JooqOrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

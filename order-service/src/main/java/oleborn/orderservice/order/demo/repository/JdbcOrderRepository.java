@@ -1,8 +1,8 @@
 package oleborn.orderservice.order.demo.repository;
 
-import gsc.edward.OrderHub_Project.order.Order;
-import gsc.edward.OrderHub_Project.order.OrderItem;
-import gsc.edward.OrderHub_Project.order.OrderStatus;
+import oleborn.orderservice.order.Order;
+import oleborn.orderservice.order.OrderItem;
+import oleborn.orderservice.order.OrderStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;

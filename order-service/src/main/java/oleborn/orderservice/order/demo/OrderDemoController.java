@@ -1,8 +1,8 @@
 package oleborn.orderservice.order.demo;
 
-import gsc.edward.OrderHub_Project.order.CreateOrderRequest;
-import gsc.edward.OrderHub_Project.order.Order;
-import gsc.edward.OrderHub_Project.order.OrderResponse;
+import oleborn.orderservice.order.CreateOrderRequest;
+import oleborn.orderservice.order.Order;
+import oleborn.orderservice.order.OrderResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

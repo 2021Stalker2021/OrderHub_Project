@@ -3,7 +3,7 @@ databaseChangeLog:
       id: V1__initial_schema.sql
       author: orderhub
       sqlFile:
-        path: db/changelog/changes/V1__initial_schema.sql
+        path: changelog/changes/V1__initial_schema.sql
         relativeToChangeFile: true
         splitStatements: true
         endDelimiter: ;
@@ -12,7 +12,7 @@ databaseChangeLog:
       id: V2__add_order_number.sql
       author: orderhub
       sqlFile:
-        path: db/changelog/changes/V2__add_order_number.sql
+        path: changelog/changes/V2__add_order_number.sql
         relativeToChangeFile: true
         splitStatements: true
         endDelimiter: ;

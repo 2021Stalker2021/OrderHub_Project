@@ -1,6 +1,6 @@
 package oleborn.orderservice.order;
 
-import gsc.edward.OrderHub_Project.order.Order;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

@@ -1,6 +1,5 @@
 package oleborn.orderservice.order;
 
-import gsc.edward.OrderHub_Project.order.Order;
 
 import java.math.BigDecimal;
 import java.time.Instant;

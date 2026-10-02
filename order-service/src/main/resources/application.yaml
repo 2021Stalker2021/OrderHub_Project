@@ -1,9 +1,9 @@
 spring:
   application:
-    name: OrderHub_Project
+    name: order-service
 
   profiles:
-    active: local
+    active: default
 
   jooq:
     sql-dialect: postgres
@@ -27,11 +27,11 @@ spring:
         order_inserts: true
         generate_statistics: true
 
-#  liquibase:
-#    user: ${POSTGRES_USER}
-#    password: ${POSTGRES_PASSWORD}
-#    enabled: true
-#    change-log: classpath:/db/changelog/changelog_master.yaml
+  liquibase:
+    user: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    enabled: true
+    change-log: classpath:/changelog/changelog_master.yaml
 
 server:
   port: 8081
@@ -73,6 +73,6 @@ management:
 
 info:
   app:
-    name: "OrderHub"
+    name: "order-service"
     version: "0.0.1"
     description: "Учимся писать продакшен код"

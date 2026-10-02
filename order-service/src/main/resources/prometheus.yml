@@ -4,11 +4,11 @@ global:
 
 # конфигурация сбора метрик
 scrape_configs:
-  - job_name: "orderhub-app"
+  - job_name: "order-service"
     metrics_path: /actuator/prometheus
 
     static_configs:
-      - targets: ['orderhub-app:8081']
+      - targets: ['order-service:8081']
       - labels:
-          application: 'orderhub-app'
+          application: 'order-service'
           environment: 'production'

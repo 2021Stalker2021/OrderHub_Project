@@ -1,8 +1,8 @@
 package oleborn.orderservice.order.demo.repository;
 
-import gsc.edward.OrderHub_Project.jooq.tables.records.OrderItemsRecord;
-import gsc.edward.OrderHub_Project.jooq.tables.records.OrdersRecord;
-import gsc.edward.OrderHub_Project.order.Order;
+import oleborn.assistant_core.jooq.tables.records.OrderItemsRecord;
+import oleborn.assistant_core.jooq.tables.records.OrdersRecord;
+import oleborn.orderservice.order.Order;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
@@ -11,8 +11,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
-import static gsc.edward.OrderHub_Project.jooq.tables.OrderItems.ORDER_ITEMS;
-import static gsc.edward.OrderHub_Project.jooq.tables.Orders.ORDERS;
+import static oleborn.assistant_core.jooq.tables.OrderItems.ORDER_ITEMS;
+import static oleborn.assistant_core.jooq.tables.Orders.ORDERS;
 
 @Repository
 @RequiredArgsConstructor

@@ -1,10 +1,8 @@
 package oleborn.orderservice.order;
 
-import gsc.edward.OrderHub_Project.order.CreateOrderRequest;
-import gsc.edward.OrderHub_Project.order.Order;
-import gsc.edward.OrderHub_Project.order.exception.NotFoundOrderException;
-import gsc.edward.OrderHub_Project.order.metrics.annotation.BusinessMetric;
-import gsc.edward.OrderHub_Project.order.repository.OrderRepository;
+import oleborn.orderservice.order.exception.NotFoundOrderException;
+import oleborn.orderservice.order.metrics.annotation.BusinessMetric;
+import oleborn.orderservice.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

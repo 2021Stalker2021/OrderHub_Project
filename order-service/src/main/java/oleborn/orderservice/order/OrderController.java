@@ -1,10 +1,9 @@
 package oleborn.orderservice.order;
 
-import gsc.edward.OrderHub_Project.order.Order;
-import gsc.edward.OrderHub_Project.order.OrderResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 
