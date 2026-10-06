@@ -1,8 +1,8 @@
 package oleborn.orderservice.order.demo;
 
 import oleborn.orderservice.order.CreateOrderRequest;
-import oleborn.orderservice.order.Order;
-import oleborn.orderservice.order.OrderItem;
+import oleborn.orderservice.order.domain.Order;
+import oleborn.orderservice.order.domain.OrderItem;
 import oleborn.orderservice.order.demo.repository.JdbcOrderRepository;
 import oleborn.orderservice.order.demo.repository.JooqOrderRepository;
 import lombok.RequiredArgsConstructor;

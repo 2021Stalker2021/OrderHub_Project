@@ -2,6 +2,7 @@ package oleborn.orderservice.order;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import oleborn.orderservice.order.domain.Order;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

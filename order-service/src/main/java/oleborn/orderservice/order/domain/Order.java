@@ -1,9 +1,10 @@
-package oleborn.orderservice.order;
+package oleborn.orderservice.order.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import oleborn.orderservice.order.OrderStatus;
 
 import java.time.Instant;
 import java.util.ArrayList;

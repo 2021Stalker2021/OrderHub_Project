@@ -1,6 +1,6 @@
 package oleborn.orderservice.order.exception;
 
-import oleborn.orderservice.order.ErrorDto;
+import oleborn.orderservice.order.domain.ErrorDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;

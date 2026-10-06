@@ -1,7 +1,7 @@
 package oleborn.orderservice.order.demo;
 
 import oleborn.orderservice.order.CreateOrderRequest;
-import oleborn.orderservice.order.Order;
+import oleborn.orderservice.order.domain.Order;
 import oleborn.orderservice.order.OrderResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -1,4 +1,4 @@
-package oleborn.orderservice.order;
+package oleborn.orderservice.order.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package oleborn.orderservice.order;
+package oleborn.orderservice.order.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 

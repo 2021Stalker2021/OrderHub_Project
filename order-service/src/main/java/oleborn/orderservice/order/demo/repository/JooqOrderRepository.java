@@ -2,7 +2,7 @@ package oleborn.orderservice.order.demo.repository;
 
 import oleborn.assistant_core.jooq.tables.records.OrderItemsRecord;
 import oleborn.assistant_core.jooq.tables.records.OrdersRecord;
-import oleborn.orderservice.order.Order;
+import oleborn.orderservice.order.domain.Order;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;

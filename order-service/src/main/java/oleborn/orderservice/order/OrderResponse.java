@@ -1,6 +1,9 @@
 package oleborn.orderservice.order;
 
 
+import oleborn.orderservice.order.domain.Order;
+import oleborn.orderservice.order.domain.OrderItem;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
