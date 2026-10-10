@@ -11,6 +11,7 @@ import oleborn.orderservice.order.domain.event.OrderCreateEvent;
 import oleborn.orderservice.order.exception.NotFoundOrderException;
 import oleborn.orderservice.order.metrics.annotation.BusinessMetric;
 import oleborn.orderservice.order.repository.OrderRepository;
+import org.slf4j.MDC;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,15 +65,30 @@ public class OrderService {
 
         Order savedOrder = orderRepository.saveAndFlush(order);
 
-        log.info("Заказ подготовлен к отправке id: {}", order.getId());
+        log.info("Отправляем инфо о заказе, id: {}", savedOrder.getId());
 
-        eventPublisher.publishEvent(OrderCreateEvent.of(savedOrder.getId()));
+        try {
+            MDC.put("order_id", savedOrder.getId().toString());
+            MDC.put("total_amount", savedOrder.getTotalPrice().toString());
+            MDC.put("order_status", savedOrder.getStatus().toString());
 
-        log.debug("Все успешно сохранено");
+            eventPublisher.publishEvent(OrderCreateEvent.of(
+                    savedOrder.getId(),
+                    MDC.getCopyOfContextMap()
+                    )
+            );
 
-        Span.current().setAttribute("order.id", savedOrder.getId());
+            log.debug("Все успешно сохранено");
 
-        return savedOrder;
+            Span.current().setAttribute("order.id", savedOrder.getId());
+
+            return savedOrder;
+
+        } finally {
+            MDC.remove("order_id");
+            MDC.remove("total_amount");
+            MDC.remove("order_status");
+        }
     }
 
     @Transactional(readOnly = true)

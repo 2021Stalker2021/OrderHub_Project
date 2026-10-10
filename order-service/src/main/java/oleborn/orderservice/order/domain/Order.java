@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import oleborn.orderservice.order.OrderStatus;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,5 +44,12 @@ public class Order {
         if (items != null) {
             items.forEach(item -> item.setOrder(this));
         }
+    }
+
+    public BigDecimal getTotalPrice() {
+        if (items == null || items.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        return items.stream().map(OrderItem::getPrice).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

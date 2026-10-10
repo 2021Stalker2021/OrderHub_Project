@@ -25,7 +25,7 @@ public class NotificationListener {
         log.info("Подготовлено событие к отправке: {}", event);
 
         try {
-            notificationClient.notifyOrderCreate(event.orderId());
+            notificationClient.notifyOrderCreate(event);
             log.debug("Уведомление успешно отправлено по id: {}", event.orderId());
         } catch (Exception e) {
             log.error("Ошибка отправки события по созданию заказа id: {}", event.orderId(), e);
