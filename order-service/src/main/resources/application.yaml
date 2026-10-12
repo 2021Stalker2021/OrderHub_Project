@@ -3,7 +3,7 @@ spring:
     name: order-service
 
   profiles:
-    active: default
+    active: elk
 
   jooq:
     sql-dialect: postgres
@@ -39,6 +39,7 @@ server:
 logging:
   level:
     org.hibernate.sql: DEBUG
+    root: info
 
 # ACTUATOR
 management:
