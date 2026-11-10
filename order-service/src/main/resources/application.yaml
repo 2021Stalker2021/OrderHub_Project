@@ -94,3 +94,27 @@ info:
 
 url:
   notification-service: ${NOTIFICATION_SERVICE_URL}
+  payment-service: ${PAYMENT_SERVICE_URL}
+
+
+resilience4j:
+  retry:
+    retryAspectOrder: 2
+    configs:
+      default:
+        maxAttempts: 3
+        waitDuration: 200ms
+        exponentialBackoffMultiplier: 2.0
+        exponentialMaxWaitDuration: 10s
+        randomizedWaitFactor: 0.3
+        retryExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException
+          - oleborn.orderservice.order.exception.PaymentFailedException
+        ignoreExceptions:
+          - java.lang.IllegalArgumentException
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+        failAfterMaxAttempts: true
+    instances:
+      paymentService:
+        baseConfig: default
+        maxAttempts: 4
