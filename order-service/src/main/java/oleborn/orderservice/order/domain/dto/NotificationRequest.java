@@ -1,4 +1,4 @@
-package oleborn.orderservice.order.domain;
+package oleborn.orderservice.order.domain.dto;
 
 import lombok.Builder;
 

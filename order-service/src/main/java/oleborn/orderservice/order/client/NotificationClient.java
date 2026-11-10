@@ -2,8 +2,8 @@ package oleborn.orderservice.order.client;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import oleborn.orderservice.order.domain.NotificationRequest;
-import oleborn.orderservice.order.domain.event.OrderCreateEvent;
+import oleborn.orderservice.order.domain.dto.NotificationRequest;
+import oleborn.orderservice.order.domain.dto.OrderCreatedEvent;
 import org.slf4j.MDC;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -19,7 +19,7 @@ public class NotificationClient {
     private final WebClient notificationWebClient;
 
     @Async
-    public void notifyOrderCreate(OrderCreateEvent event) {
+    public void notifyOrderCreate(OrderCreatedEvent event) {
 
         Map<String, String> context = event.context();
 

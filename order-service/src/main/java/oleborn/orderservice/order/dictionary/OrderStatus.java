@@ -1,4 +1,4 @@
-package oleborn.orderservice.order;
+package oleborn.orderservice.order.dictionary;
 
 public enum OrderStatus {
 

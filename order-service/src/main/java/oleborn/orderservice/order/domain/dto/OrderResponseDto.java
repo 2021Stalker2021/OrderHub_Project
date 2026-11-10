@@ -1,6 +1,7 @@
-package oleborn.orderservice.order;
+package oleborn.orderservice.order.domain.dto;
 
 
+import oleborn.orderservice.order.dictionary.OrderStatus;
 import oleborn.orderservice.order.domain.Order;
 import oleborn.orderservice.order.domain.OrderItem;
 
@@ -8,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
-public record OrderResponse(
+public record OrderResponseDto(
 
         Long id,
         OrderStatus status,
@@ -18,7 +19,7 @@ public record OrderResponse(
 
 ) {
 
-    public static OrderResponse from(Order order) {
+    public static OrderResponseDto from(Order order) {
 
         BigDecimal total = order.getItems().stream()
                 .map(orderItem -> orderItem.getPrice().multiply(BigDecimal.valueOf(orderItem.getQuantity())))
@@ -28,7 +29,7 @@ public record OrderResponse(
                 .map(OrderItemResponse::from)
                 .toList();
 
-        return new OrderResponse(
+        return new OrderResponseDto(
                 order.getId(),
                 order.getStatus(),
                 order.getCreatedAt(),
