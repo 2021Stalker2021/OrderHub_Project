@@ -1,4 +1,4 @@
-package oleborn.orderservice.order;
+package oleborn.orderservice.order.service;
 
 import io.micrometer.observation.annotation.Observed;
 import io.opentelemetry.api.trace.Span;
@@ -7,7 +7,9 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oleborn.orderservice.order.domain.Order;
 import oleborn.orderservice.order.domain.OrderItem;
-import oleborn.orderservice.order.domain.event.OrderCreateEvent;
+import oleborn.orderservice.order.domain.dto.CreateOrderRequestDto;
+import oleborn.orderservice.order.domain.dto.OrderCreatedEvent;
+import oleborn.orderservice.order.domain.dto.PaymentResponseDto;
 import oleborn.orderservice.order.exception.NotFoundOrderException;
 import oleborn.orderservice.order.metrics.annotation.BusinessMetric;
 import oleborn.orderservice.order.repository.OrderRepository;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,10 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final PaymentService paymentService;
+
+    private final AtomicBoolean failureMode = new AtomicBoolean(false);
+    private final Random random = new Random();
 
     @Transactional
     @BusinessMetric(
@@ -34,22 +41,25 @@ public class OrderService {
     )
     @Observed(name = "order.creation", contextualName = "create-order")
     @SneakyThrows
-    public Order createOrder(CreateOrderRequest request) {
+    public Order createOrder(CreateOrderRequestDto request) {
 
-        log.debug("В метод createOrder получен запрос {}", request);
+        log.debug("В метод createOrder получен запрос: {}", request);
 
-        int random = new Random().nextInt(100);
+        if (failureMode.get()) {
 
-        log.info("Выпало число: {}", random);
+            int randomInt = random.nextInt(100);
 
-        if (random < 30) {
-            log.error("Возникли проблемы с обработкой сохранения заказа");
-            throw new RuntimeException("Типа проблемы с обработкой заказа");
-        }
+            log.debug("Выпало число: {}", randomInt);
 
-        if (random > 70) {
-            log.warn("OrderService замедлился");
-            Thread.sleep(200);
+            if (randomInt < 30) {
+                log.error("Возникли проблемы с обработкой сохранения заказа");
+                throw new RuntimeException("Типа проблемы с обработкой заказа");
+            }
+
+            if (randomInt > 70) {
+                log.warn("OrderService замедлился");
+                Thread.sleep(200);
+            }
         }
 
         List<OrderItem> items = request.items().stream()
@@ -65,21 +75,30 @@ public class OrderService {
 
         Order savedOrder = orderRepository.saveAndFlush(order);
 
-        log.info("Отправляем инфо о заказе, id: {}", savedOrder.getId());
+        PaymentResponseDto dto = paymentService.processPaymentResilience4j(savedOrder);
+
+        if (dto != null && !dto.isSuccessful()) {
+            log.warn("Бизнес ошибка оплаты: {}", dto.message());
+        }
+
+        log.info("Оплата заказа id: {}, успешно проведена", savedOrder.getId());
+
+        log.debug("Отправляем инфо о заказе, id: {}", savedOrder.getId());
 
         try {
             MDC.put("order_id", savedOrder.getId().toString());
             MDC.put("total_amount", savedOrder.getTotalPrice().toString());
             MDC.put("order_status", savedOrder.getStatus().toString());
 
-            eventPublisher.publishEvent(OrderCreateEvent.of(
-                    savedOrder.getId(),
-                    MDC.getCopyOfContextMap()
+            eventPublisher.publishEvent(OrderCreatedEvent.of(
+                            savedOrder.getId(),
+                            MDC.getCopyOfContextMap()
                     )
             );
 
             log.debug("Все успешно сохранено");
 
+            // Теги добавятся в order.creation span
             Span.current().setAttribute("order.id", savedOrder.getId());
 
             return savedOrder;
@@ -96,9 +115,9 @@ public class OrderService {
             value = "orders.retrieved",
             tags = {"operation=get", "type=read"}
     )
-    public Order findOrderById(Long id) {
+    public Order getOrderWithItems(Long id) {
 
-        log.debug("В метод findOrderById получен запрос поиска по id: {}", id);
+        log.debug("В метод getOrderWithItems получен запрос поиска order по id: {}", id);
 
         Order order = orderRepository.findWithItemsById(id).orElseThrow(
                 () -> new NotFoundOrderException("Order not found")
@@ -107,5 +126,10 @@ public class OrderService {
         log.debug("Результат успешно найден");
 
         return order;
+    }
+
+    public void setFailureMode(boolean enabled) {
+        failureMode.set(enabled);
+        log.info("Failure mode в OrderService, переключен на: {}", enabled);
     }
 }

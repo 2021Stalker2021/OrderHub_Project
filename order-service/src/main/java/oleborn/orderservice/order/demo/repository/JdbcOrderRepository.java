@@ -2,7 +2,7 @@ package oleborn.orderservice.order.demo.repository;
 
 import oleborn.orderservice.order.domain.Order;
 import oleborn.orderservice.order.domain.OrderItem;
-import oleborn.orderservice.order.OrderStatus;
+import oleborn.orderservice.order.dictionary.OrderStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;

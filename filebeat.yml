@@ -18,6 +18,8 @@ processors:
                 container.name: "order_service"
             - equals:
                 container.name: "notification_service"
+            - equals:
+                container.name: "payment-service"
 
   - decode_json_fields:
       fields: ["message"]

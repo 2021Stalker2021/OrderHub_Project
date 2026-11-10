@@ -1,9 +1,9 @@
-package oleborn.orderservice.order;
+package oleborn.orderservice.order.listener;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import oleborn.orderservice.order.client.NotificationClient;
-import oleborn.orderservice.order.domain.event.OrderCreateEvent;
+import oleborn.orderservice.order.domain.dto.OrderCreatedEvent;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -21,7 +21,7 @@ public class NotificationListener {
      Он «встанет на паузу» и будет ждать, пока OrderService полностью завершит свою транзакцию, а база данных
      подтвердит (Commit), что заказ успешно и без ошибок записан на диск.
      */
-    public void handleOrderCreated(OrderCreateEvent event) {
+    public void handleOrderCreated(OrderCreatedEvent event) {
         log.info("Подготовлено событие к отправке: {}", event);
 
         try {

@@ -1,15 +1,15 @@
-package oleborn.orderservice.order.domain.event;
+package oleborn.orderservice.order.domain.dto;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 
-public record OrderCreateEvent(
+public record OrderCreatedEvent(
         Long orderId,
         Map<String, String> context,
         LocalDateTime timestamp
 ) {
-    public static OrderCreateEvent of(Long orderId, Map<String, String> context) {
-        return new OrderCreateEvent(
+    public static OrderCreatedEvent of(Long orderId, Map<String, String> context) {
+        return new OrderCreatedEvent(
                 orderId,
                 context,
                 LocalDateTime.now()
