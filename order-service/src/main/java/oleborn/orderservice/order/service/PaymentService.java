@@ -1,5 +1,6 @@
 package oleborn.orderservice.order.service;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,7 @@ import oleborn.orderservice.order.domain.dto.PaymentResponseDto;
 import oleborn.orderservice.order.exception.PaymentFailedException;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.retry.support.RetrySynchronizationManager;
 import org.springframework.stereotype.Service;
@@ -60,9 +62,11 @@ public class PaymentService {
     }
 
 
-    @Retry(
-            name = "paymentService"
+    @CircuitBreaker(
+            name = "paymentService",
+            fallbackMethod = "fallbackProcessPayment"
     )
+    @Retry(name = "paymentService")
     public PaymentResponseDto processPaymentResilience4j(Order savedOrder) {
 
         try {
@@ -78,5 +82,13 @@ public class PaymentService {
             log.error("Техническая ошибка в payment-service {}", e.getMessage());
             throw new PaymentFailedException("Payment-service error: " + e.getMessage());
         }
+    }
+
+    @Recover
+    public PaymentResponseDto fallbackProcessPayment(Order savedOrder, Throwable t) {
+
+        log.warn("Резервная логика для заказа: {}, после срабатывания CircuitBreaker: {}", savedOrder.getId(), t.getMessage());
+
+        throw new PaymentFailedException("Payment-service error: " + t.getMessage());
     }
 }
