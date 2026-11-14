@@ -111,10 +111,9 @@ resilience4j:
           - feign.FeignException
           - org.springframework.web.reactive.function.client.WebClientResponseException
           - oleborn.orderservice.order.exception.PaymentFailedException
-            
-            - io.netty.handler.timeout.ReadTimeoutException
-            - java.util.concurrent.TimeoutException
-#            - java.lang.RuntimeException
+          - io.netty.handler.timeout.ReadTimeoutException
+          - java.util.concurrent.TimeoutException
+#         - java.lang.RuntimeException
         ignoreExceptions:
           - java.lang.IllegalArgumentException
           - io.github.resilience4j.circuitbreaker.CallNotPermittedException
