@@ -11,6 +11,7 @@ import oleborn.orderservice.order.domain.dto.CreateOrderRequestDto;
 import oleborn.orderservice.order.domain.dto.OrderCreatedEvent;
 import oleborn.orderservice.order.domain.dto.PaymentResponseDto;
 import oleborn.orderservice.order.exception.NotFoundOrderException;
+import oleborn.orderservice.order.exception.PaymentFailedException;
 import oleborn.orderservice.order.metrics.annotation.BusinessMetric;
 import oleborn.orderservice.order.repository.OrderRepository;
 import org.slf4j.MDC;
@@ -34,7 +35,10 @@ public class OrderService {
     private final AtomicBoolean failureMode = new AtomicBoolean(false);
     private final Random random = new Random();
 
-    @Transactional
+
+    //timeout для защиты от долгих SQL-запросов или залипаний на уровне БД, если метод выполняется дольше 5 секунд — транзакция откатится
+    //не контролирует вызовы внешних сервисов, только бд
+    @Transactional(timeout = 5)
     @BusinessMetric(
             value = "orders.created",
             tags = {"operation=create", "type=write"}
@@ -45,47 +49,40 @@ public class OrderService {
 
         log.debug("В метод createOrder получен запрос: {}", request);
 
-        if (failureMode.get()) {
-
-            int randomInt = random.nextInt(100);
-
-            log.debug("Выпало число: {}", randomInt);
-
-            if (randomInt < 30) {
-                log.error("Возникли проблемы с обработкой сохранения заказа");
-                throw new RuntimeException("Типа проблемы с обработкой заказа");
-            }
-
-            if (randomInt > 70) {
-                log.warn("OrderService замедлился");
-                Thread.sleep(200);
-            }
-        }
-
-        List<OrderItem> items = request.items().stream()
-                .map(item -> new OrderItem(
-                        item.productId(),
-                        item.productName(),
-                        item.quantity(),
-                        item.price()
-                ))
-                .toList();
-
-        Order order = new Order(items);
-
-        Order savedOrder = orderRepository.saveAndFlush(order);
-
-        PaymentResponseDto dto = paymentService.processPaymentResilience4j(savedOrder);
-
-        if (dto != null && !dto.isSuccessful()) {
-            log.warn("Бизнес ошибка оплаты: {}", dto.message());
-        }
-
-        log.info("Оплата заказа id: {}, успешно проведена", savedOrder.getId());
-
-        log.debug("Отправляем инфо о заказе, id: {}", savedOrder.getId());
-
         try {
+
+            runFail();
+
+            List<OrderItem> items = request.items().stream()
+                    .map(item -> new OrderItem(
+                            item.productId(),
+                            item.productName(),
+                            item.quantity(),
+                            item.price()
+                    ))
+                    .toList();
+
+            Order order = new Order(items);
+
+            Order savedOrder = orderRepository.saveAndFlush(order);
+
+//            //синхронный вариант
+//            paymentService.processPaymentFeign(savedOrder);
+
+            //асинхронный вариант
+            PaymentResponseDto response = paymentService.processPaymentResilience4j(savedOrder).get();
+
+            if (response != null && !response.isSuccessful()) {
+                log.warn("Бизнес-ошибка оплаты: {}", response.message());
+                throw new PaymentFailedException("Payment failed: " + response.message());
+            }
+
+            log.info("Оплата заказа id: {}, успешно проведена", savedOrder.getId());
+
+
+            log.debug("Отправляем инфо о заказе, id: {}", savedOrder.getId());
+
+
             MDC.put("order_id", savedOrder.getId().toString());
             MDC.put("total_amount", savedOrder.getTotalPrice().toString());
             MDC.put("order_status", savedOrder.getStatus().toString());
@@ -103,6 +100,10 @@ public class OrderService {
 
             return savedOrder;
 
+        } catch (Exception e) {
+            Throwable cause = e.getCause();
+            log.error("Ошибка при оплате заказа {}", cause.getMessage());
+            throw new PaymentFailedException("Payment error: " + cause.getMessage());
         } finally {
             MDC.remove("order_id");
             MDC.remove("total_amount");
@@ -131,5 +132,25 @@ public class OrderService {
     public void setFailureMode(boolean enabled) {
         failureMode.set(enabled);
         log.info("Failure mode в OrderService, переключен на: {}", enabled);
+    }
+
+    @SneakyThrows
+    private void runFail() {
+        if (failureMode.get()) {
+
+            int randomInt = random.nextInt(100);
+
+            log.debug("Выпало число: {}", randomInt);
+
+            if (randomInt < 30) {
+                log.error("Возникли проблемы с обработкой сохранения заказа");
+                throw new RuntimeException("Типа проблемы с обработкой заказа");
+            }
+
+            if (randomInt > 70) {
+                log.warn("OrderService замедлился");
+                Thread.sleep(200);
+            }
+        }
     }
 }
