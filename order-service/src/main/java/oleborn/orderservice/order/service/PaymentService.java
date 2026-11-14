@@ -1,13 +1,18 @@
 package oleborn.orderservice.order.service;
 
+import feign.FeignException;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import oleborn.orderservice.order.client.PaymentClient;
 import oleborn.orderservice.order.domain.Order;
+import oleborn.orderservice.order.domain.dto.PaymentRequestDto;
 import oleborn.orderservice.order.domain.dto.PaymentResponseDto;
 import oleborn.orderservice.order.exception.PaymentFailedException;
+import oleborn.orderservice.order.feignclient.PaymentFeignClient;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
@@ -16,79 +21,159 @@ import org.springframework.retry.support.RetrySynchronizationManager;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.util.concurrent.CompletableFuture;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentService {
 
     private final PaymentClient paymentClient;
+    private final PaymentFeignClient paymentFeignClient;
 
+    //стандарт спринг, при использовании @CircuitBreaker, @Retryable не использовать
     @Retryable(
+            // При каких исключениях повторять (работает по instanceof)
             retryFor = {
                     WebClientResponseException.class,
-                    PaymentFailedException.class,
+                    PaymentFailedException.class
             },
+
+            // При каких исключениях НЕ повторять (даже если подходят под retryFor)
             noRetryFor = {
                     IllegalArgumentException.class
             },
+
+            // Максимальное количество попыток (включая первую)
             maxAttempts = 3,
+//
+//            // SpEL-выражение для динамического задания maxAttempts (например, из property)
+//            maxAttemptsExpression = "#{${retry.max-attempts}}",
+
+            // Настройка задержки между попытками
             backoff = @Backoff(
-                    delay = 200,
-                    maxDelay = 5000,
-                    multiplier = 2,
-                    random = true
+                    delay = 200,          // начальная задержка (мс)
+                    maxDelay = 5000,       // максимальная задержка (ограничитель)
+                    multiplier = 2.0,      // множитель для экспоненциального роста
+                    random = true          // jitter — случайное отклонение
             )
+//
+//            // SpEL-выражение для тонкой фильтрации исключений (доступен #root)
+//            exceptionExpression = "#{@exceptionChecker.shouldRetry(#root)}",
+//
+//            // Сохранять состояние между попытками (нужно для circuit breaker)
+//            stateful = false,
+//
+//            // Метка для мониторинга и логирования
+//            label = "",
+//
+//            // Имена Spring-бинов, реализующих RetryListener
+//            listeners = {""},
+//
+//            // Имя метода fallback, вызываемого после исчерпания попыток
+//            recover = "",
+//
+//            // Исключения, при которых fallback НЕ вызывается
+//            notRecoverable = {},
+//
+//            // interceptor — имя бина MethodInterceptor для кастомной логики (редко используется)
+//            interceptor = ""
     )
-    public PaymentResponseDto processPaymentDefault(Order savedOrder) {
+
+//    @CircuitBreaker(
+//            // ----- Параметры, унаследованные от @Retryable (через @AliasFor) -----
+//            retryFor = {PaymentFailedException.class},      // Какие исключения считать сбоем
+//            noRetryFor = {IllegalArgumentException.class},  // Какие исключения игнорировать
+//            maxAttempts = 5,                                // После скольких сбоев подряд breaker откроется
+//            label = "",                                     // Метка для мониторинга
+//            recover = "",                                   // Метод fallback
+//            notRecoverable = {},                            // Исключения, при которых fallback не вызывается
+//
+//            // ----- Специфичные параметры circuit breaker -----
+//            resetTimeout = 30000,                                   // Время (мс) в OPEN до перехода в HALF-OPEN
+//            resetTimeoutExpression = "#{${breaker.reset-timeout}}", // SpEL для resetTimeout
+//            openTimeout = 5000,                                     // Таймаут нахождения в OPEN (редко используется)
+//            openTimeoutExpression = "#{${breaker.open-timeout}}",
+//            throwLastExceptionOnExhausted = false                   // Выбрасывать ли исключение после исчерпания
+//    )
+    public PaymentResponseDto processPaymentStandardSpring(Order savedOrder) {
 
         RetryContext context = RetrySynchronizationManager.getContext();
         int attempt = context != null ? context.getRetryCount() + 1 : 1;
 
-        log.debug("ПОПЫТКА {} ИЗ 3 <====", attempt);
+        log.debug("ПОПЫТКА {} ИЗ 3 <===", attempt);
 
-        try {
-            PaymentResponseDto responseDto = paymentClient.processPayment(
-                    savedOrder.getId(),
-                    savedOrder.getTotalPrice()
-            ).block();
+        try{
+
+            PaymentResponseDto response = paymentClient
+                    .processPayment(savedOrder.getId(), savedOrder.getTotalPrice())
+                    .block(); //Поток переходит в состояние TIMED_WAITING (ждёт ответа по сети)
 
             log.info("Попытка {} успешна", attempt);
 
-            return responseDto;
+            return response;
+
         } catch (WebClientResponseException e) {
-            log.error("Попытка {}: техническая ошибка в payment-service {}",attempt, e.getMessage());
-            throw new PaymentFailedException("Payment-service error: " + e.getMessage());
+            log.error("Попытка {}: Техническая ошибка при вызове payment-service {}", attempt, e.getStatusCode());
+
+            throw new PaymentFailedException("Payment service error: " + e.getStatusText());
         }
     }
 
+    @TimeLimiter(name = "paymentService")
+    @CircuitBreaker(
+            name = "paymentService",               //Имя экземпляра, должно соответствовать имени в конфигурации
+            fallbackMethod = "fallbackProcessPayment" //Метод, который вызовется при открытом breaker'е или исключении
+            //для асинхронного взаимодействия должен возвращать CompletableFuture<PaymentResponseDto>
+    )
+    @Retry(name = "paymentService")
+    @Bulkhead(name = "paymentService", fallbackMethod = "fallbackBulkheadPayment")
+    public CompletableFuture<PaymentResponseDto> processPaymentResilience4j(Order savedOrder) {
+
+        try{
+            return paymentClient
+                    .processPayment(savedOrder.getId(), savedOrder.getTotalPrice())
+                    .toFuture();
+
+        } catch (WebClientResponseException e) {
+            log.error("Техническая ошибка при вызове payment-service");
+            throw new PaymentFailedException("Payment service error: " + e.getStatusText());
+        }
+    }
 
     @CircuitBreaker(
             name = "paymentService",
             fallbackMethod = "fallbackProcessPayment"
     )
     @Retry(name = "paymentService")
-    public PaymentResponseDto processPaymentResilience4j(Order savedOrder) {
+    @Bulkhead(name = "paymentService", fallbackMethod = "fallbackBulkheadPayment")
+    public PaymentResponseDto processPaymentFeign(Order savedOrder) {
+        try{
+            PaymentResponseDto response = paymentFeignClient.processPayment(
+                    new PaymentRequestDto(savedOrder.getId(), savedOrder.getTotalPrice())
+            );
 
-        try {
-            PaymentResponseDto responseDto = paymentClient.processPayment(
-                    savedOrder.getId(),
-                    savedOrder.getTotalPrice()
-            ).block();
+            log.debug("Успешно обработана оплата через feign-клиента. Ответ: {}", response);
 
-            log.info("Попытка успешна");
+            return response;
 
-            return responseDto;
-        } catch (WebClientResponseException e) {
-            log.error("Техническая ошибка в payment-service {}", e.getMessage());
-            throw new PaymentFailedException("Payment-service error: " + e.getMessage());
+        } catch (FeignException.FeignClientException e) {
+            log.error("Техническая ошибка при вызове payment-service через feign-клиента");
+            throw new PaymentFailedException("Payment service error: " + e.getMessage());
         }
     }
 
     @Recover
     public PaymentResponseDto fallbackProcessPayment(Order savedOrder, Throwable t) {
+        log.warn("Резервный вариант логики для заказа: {}, после срабатывания circuit breaker: {}",savedOrder.getId(), t.getMessage());
 
-        log.warn("Резервная логика для заказа: {}, после срабатывания CircuitBreaker: {}", savedOrder.getId(), t.getMessage());
+        throw new PaymentFailedException("Payment сервис временно недоступен: " + t.getMessage());
+    }
 
-        throw new PaymentFailedException("Payment-service error: " + t.getMessage());
+    @Recover
+    public PaymentResponseDto fallbackBulkheadPayment(Order savedOrder, Throwable t) {
+        log.warn("Сервис перегружен: {}, сработал Bulkhead для: {}",savedOrder.getId(), t.getMessage());
+
+        throw new PaymentFailedException("Payment сервис временно недоступен: " + t.getMessage());
     }
 }
