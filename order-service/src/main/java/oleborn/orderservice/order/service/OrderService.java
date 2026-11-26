@@ -5,13 +5,14 @@ import io.opentelemetry.api.trace.Span;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import oleborn.orderservice.order.dictionary.OrderStatus;
 import oleborn.orderservice.order.domain.Order;
 import oleborn.orderservice.order.domain.OrderItem;
 import oleborn.orderservice.order.domain.dto.CreateOrderRequestDto;
 import oleborn.orderservice.order.domain.dto.OrderCreatedEvent;
 import oleborn.orderservice.order.domain.dto.PaymentResponseDto;
 import oleborn.orderservice.order.exception.NotFoundOrderException;
-import oleborn.orderservice.order.exception.PaymentFailedException;
+import oleborn.orderservice.order.exception.OrderCreatedException;
 import oleborn.orderservice.order.metrics.annotation.BusinessMetric;
 import oleborn.orderservice.order.repository.OrderRepository;
 import org.slf4j.MDC;
@@ -38,7 +39,7 @@ public class OrderService {
 
     //timeout для защиты от долгих SQL-запросов или залипаний на уровне БД, если метод выполняется дольше 5 секунд — транзакция откатится
     //не контролирует вызовы внешних сервисов, только бд
-    @Transactional(timeout = 5)
+    @Transactional(timeout = 30)
     @BusinessMetric(
             value = "orders.created",
             tags = {"operation=create", "type=write"}
@@ -63,8 +64,11 @@ public class OrderService {
                     .toList();
 
             Order order = new Order(items);
+            order.setStatus(OrderStatus.PENDING);
 
             Order savedOrder = orderRepository.saveAndFlush(order);
+
+            log.info("Заказ создан id: {}, с статусом PENDING", savedOrder.getId());
 
 //            //синхронный вариант
 //            paymentService.processPaymentFeign(savedOrder);
@@ -72,28 +76,32 @@ public class OrderService {
             //асинхронный вариант
             PaymentResponseDto response = paymentService.processPaymentResilience4j(savedOrder).get();
 
-            if (response != null && !response.isSuccessful()) {
-                log.warn("Бизнес-ошибка оплаты: {}", response.message());
-                throw new PaymentFailedException("Payment failed: " + response.message());
+            if (response.isRequiredPendingProcess()) {
+                log.info("Заказ не был сразу оплачен, id: {}, пойдет на повторную оплату", savedOrder.getId());
+            } else if (response.isSuccessful()) {
+                order.setStatus(OrderStatus.PAID);
+                orderRepository.saveAndFlush(order);
+
+                log.info("Заказ id: {}, был сразу оплачен и сохранен", savedOrder.getId());
+
+                eventPublisher.publishEvent(OrderCreatedEvent.of(
+                                savedOrder.getId(),
+                                MDC.getCopyOfContextMap()
+                        )
+                );
+
+            } else {
+                order.setStatus(OrderStatus.CANCELLED);
+                orderRepository.saveAndFlush(order);
+
+                log.warn("Бизнес ошибка оплаты заказа id: {}, причина: {}", savedOrder.getId(), response.message());
             }
-
-            log.info("Оплата заказа id: {}, успешно проведена", savedOrder.getId());
-
-
-            log.debug("Отправляем инфо о заказе, id: {}", savedOrder.getId());
-
 
             MDC.put("order_id", savedOrder.getId().toString());
             MDC.put("total_amount", savedOrder.getTotalPrice().toString());
             MDC.put("order_status", savedOrder.getStatus().toString());
 
-            eventPublisher.publishEvent(OrderCreatedEvent.of(
-                            savedOrder.getId(),
-                            MDC.getCopyOfContextMap()
-                    )
-            );
-
-            log.debug("Все успешно сохранено");
+            log.debug("Отправляем инфо о заказе, id: {}", savedOrder.getId());
 
             // Теги добавятся в order.creation span
             Span.current().setAttribute("order.id", savedOrder.getId());
@@ -103,7 +111,7 @@ public class OrderService {
         } catch (Exception e) {
             Throwable cause = e.getCause();
             log.error("Ошибка при оплате заказа {}", cause.getMessage());
-            throw new PaymentFailedException("Payment error: " + cause.getMessage());
+            throw new OrderCreatedException("Order created error: " + cause.getMessage());
         } finally {
             MDC.remove("order_id");
             MDC.remove("total_amount");

@@ -40,6 +40,15 @@ public class GlobalExceptionHandler {
 
     }
 
+    @ExceptionHandler(OrderCreatedException.class)
+    public ResponseEntity<ErrorDto> handleException(OrderCreatedException ex) {
+
+        ErrorDto error = new ErrorDto(500, "Ошибка приложения", ex.getMessage());
+
+        return ResponseEntity.internalServerError().body(error);
+
+    }
+
     @ExceptionHandler(CircuitBreakerOpenException.class)
     public ResponseEntity<ErrorDto> handleException(CircuitBreakerOpenException ex) {
 
