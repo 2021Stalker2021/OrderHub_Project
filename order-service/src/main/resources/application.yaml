@@ -17,7 +17,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
@@ -33,12 +33,21 @@ spring:
     enabled: true
     change-log: classpath:/changelog/changelog_master.yaml
 
+  task:
+    scheduling:
+      pool:
+        size: 5
+      thread-name-prefix: "scheduled-"
+      shutdown:
+        await-termination: true
+
 server:
   port: 8081
 
 logging:
   level:
-    org.hibernate.sql: DEBUG
+    org.hibernate.SQL: DEBUG # 2. Заглавные SQL — теперь запросы пойдут через Logback в JSON
+    org.hibernate.stat: DEBUG # 3. Перенаправляем Session Metrics в JSON-логгер
     root: info
 
 # ACTUATOR

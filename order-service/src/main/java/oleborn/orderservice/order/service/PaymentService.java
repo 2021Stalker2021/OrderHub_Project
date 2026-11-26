@@ -15,7 +15,6 @@ import oleborn.orderservice.order.exception.PaymentFailedException;
 import oleborn.orderservice.order.feignclient.PaymentFeignClient;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.retry.support.RetrySynchronizationManager;
 import org.springframework.stereotype.Service;
@@ -103,7 +102,7 @@ public class PaymentService {
 
         log.debug("ПОПЫТКА {} ИЗ 3 <===", attempt);
 
-        try{
+        try {
 
             PaymentResponseDto response = paymentClient
                     .processPayment(savedOrder.getId(), savedOrder.getTotalPrice())
@@ -127,18 +126,18 @@ public class PaymentService {
             //для асинхронного взаимодействия должен возвращать CompletableFuture<PaymentResponseDto>
     )
     @Retry(name = "paymentService")
-    @Bulkhead(name = "paymentService", fallbackMethod = "fallbackBulkheadPayment")
+    @Bulkhead(name = "paymentService")
     public CompletableFuture<PaymentResponseDto> processPaymentResilience4j(Order savedOrder) {
+        return paymentClient
+                .processPayment(savedOrder.getId(), savedOrder.getTotalPrice())
+                .toFuture()
+                .exceptionally(throwable -> {
+                    Throwable cause = throwable.getCause() != null ? throwable.getCause() : throwable;
 
-        try{
-            return paymentClient
-                    .processPayment(savedOrder.getId(), savedOrder.getTotalPrice())
-                    .toFuture();
+                    log.error("Техническая ошибка при вызове сервиса payment: {}", cause.getMessage());
 
-        } catch (WebClientResponseException e) {
-            log.error("Техническая ошибка при вызове payment-service");
-            throw new PaymentFailedException("Payment service error: " + e.getStatusText());
-        }
+                    throw new PaymentFailedException("Payment service error: " + cause.getMessage());
+                });
     }
 
     @CircuitBreaker(
@@ -146,9 +145,9 @@ public class PaymentService {
             fallbackMethod = "fallbackProcessPayment"
     )
     @Retry(name = "paymentService")
-    @Bulkhead(name = "paymentService", fallbackMethod = "fallbackBulkheadPayment")
+    @Bulkhead(name = "paymentService")
     public PaymentResponseDto processPaymentFeign(Order savedOrder) {
-        try{
+        try {
             PaymentResponseDto response = paymentFeignClient.processPayment(
                     new PaymentRequestDto(savedOrder.getId(), savedOrder.getTotalPrice())
             );
@@ -163,17 +162,18 @@ public class PaymentService {
         }
     }
 
-    @Recover
-    public PaymentResponseDto fallbackProcessPayment(Order savedOrder, Throwable t) {
-        log.warn("Резервный вариант логики для заказа: {}, после срабатывания circuit breaker: {}",savedOrder.getId(), t.getMessage());
+    public CompletableFuture<PaymentResponseDto> fallbackProcessPayment(Order savedOrder, Throwable t) {
 
-        throw new PaymentFailedException("Payment сервис временно недоступен: " + t.getMessage());
-    }
+        log.warn("fallback для заказа: {}, по причине: {}", savedOrder.getId(), t.getMessage());
 
-    @Recover
-    public PaymentResponseDto fallbackBulkheadPayment(Order savedOrder, Throwable t) {
-        log.warn("Сервис перегружен: {}, сработал Bulkhead для: {}",savedOrder.getId(), t.getMessage());
+        String message = t.getMessage();
 
-        throw new PaymentFailedException("Payment сервис временно недоступен: " + t.getMessage());
+        return CompletableFuture.completedFuture(
+                PaymentResponseDto.builder()
+                        .message(message)
+                        .isRequiredPendingProcess(true)
+                        .isSuccessful(true)
+                        .build()
+        );
     }
 }
